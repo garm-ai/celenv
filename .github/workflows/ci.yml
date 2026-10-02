@@ -1,0 +1,37 @@
+# CI for garm-ai/celenv.
+#
+# This module has no natsconn to copy a workflow from, so this is a minimal
+# one modelled on garm-ai/contracts: vet, then test, on ubuntu-latest, with
+# the Go version read from go.mod so the two cannot drift apart.
+#
+# Unlike contracts, this module is not banned from having real dependencies —
+# it imports cel-go and protobuf on purpose — so there is no "// indirect"
+# check here. The property that matters for celenv (no dependency on any
+# garm-ai component) is asserted by TestTheModuleDependsOnNothingFromGarm in
+# celenv_test.go, and that test runs as part of `go test ./...` below.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - run: go vet ./...
+      - run: go test ./...
